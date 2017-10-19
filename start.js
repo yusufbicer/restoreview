@@ -8,6 +8,7 @@ if (major < 7 || (major === 7 && minor <= 5)) {
 }
 
 // import environmental variables from our variables.env file
+// where you store sensitive information (passwords, token, etc)
 require('dotenv').config({ path: 'variables.env' });
 
 // Connect to our Database and handle an bad connections
@@ -17,8 +18,8 @@ mongoose.connection.on('error', (err) => {
   console.error(`🙅 🚫 🙅 🚫 🙅 🚫 🙅 🚫 → ${err.message}`);
 });
 
-// READY?! Let's go!
-
+// import all of our models
+require('./models/Store');
 
 // Start our app!
 const app = require('./app');
