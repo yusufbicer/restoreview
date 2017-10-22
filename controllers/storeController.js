@@ -36,7 +36,7 @@ exports.resize = async (req, res, next) => {
   // now we resize
   const photo = await jimp.read(req.file.buffer);
   await photo.resize(800, jimp.AUTO);
-  await photo.write(`./public/uploads/${req.body.photo}`)
+  await photo.write(`./public/uploads/${req.body.photo}`);
   // once we have written the photo to our filesystem, keep going!
   next();
 };
@@ -76,4 +76,12 @@ exports.updateStore = async (req, res) => {
   );
   // 2. Redirect them to the store and tell them it worked
   res.redirect(`/stores/${store._id}/edit`);
+};
+
+exports.getStoreBySlug = async (req, res, next) => {
+  const store = await Store.findOne({ slug: req.params.slug });
+  if (!store) {
+    return next();
+  }
+  res.render('store', {store, title: store.name})
 };
