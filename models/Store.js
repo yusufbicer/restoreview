@@ -59,6 +59,6 @@ storeSchema.statics.getTagsList = function() {
     { $group: { _id: '$tags', count: { $sum: 1 } } },
     { $sort: { count: -1 } }
   ]);
-};
+}
 
 module.exports = mongoose.model('Store', storeSchema);
