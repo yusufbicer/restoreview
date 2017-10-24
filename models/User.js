@@ -22,6 +22,12 @@ const userSchema = new Schema({
   }
 });
 
+userSchema.virtual('gravatar').get(function() {
+  const hash = md5(this.email);
+  return `https://gravatar.com/avatar/${hash}?s=200`;
+  // return `http://3.bp.blogspot.com/-29bdsynU7zI/T6T_XW4KBkI/AAAAAAAAAPk/0f5ntMSpgX8/s1600/fat-japanese-man-bra.jpg`;
+});
+
 userSchema.plugin(passportLocalMongoose, { usernameField: 'email' }); // passportLocalMongoose has a 'register' method that we use in the userController
 userSchema.plugin(mongodbErrorHandler);
 
