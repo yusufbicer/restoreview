@@ -48,6 +48,12 @@ storeSchema.index({
   description: 'text'
 });
 
+//store metadata about location as geospatial metadata
+storeSchema.index({
+  location: '2dsphere'
+});
+
+
 storeSchema.pre('save', async function(next) {
   if (!this.isModified('name')) {
     next(); // skip it
@@ -71,5 +77,9 @@ storeSchema.statics.getTagsList = function() {
     { $sort: { count: -1 } }
   ]);
 };
+
+exports.mapStore = async (req, res) => {
+  res.json({it: 'worked'})
+}
 
 module.exports = mongoose.model('Store', storeSchema);

@@ -107,21 +107,40 @@ exports.getStoresByTag = async (req, res) => {
 
 exports.searchStores = async (req, res) => {
   const stores = await Store
-  // first find the store
-  .find(
-    {
-      $text: {
-        $search: req.query.q
+    // first find the store
+    .find(
+      {
+        $text: {
+          $search: req.query.q
+        }
+      },
+      {
+        score: { $meta: 'textScore' } // textScore finds the amount of words found in the text
       }
-    },
-    {
-      score: { $meta: 'textScore' } // textScore finds the amount of words found in the text
+    )
+    // then sort them
+    .sort({
+      score: { $meta: 'textScore' }
     })
-  // then sort them
-  .sort({
-    score: { $meta: 'textScore' }
-  })
-  // limit to only 5 results
-  .limit(5);
+    // limit to only 5 results
+    .limit(5);
+  res.json(stores);
+};
+
+exports.mapStores = async (req, res) => {
+  const coordinates = [req.query.lng, req.query.lat].map(parseFloat);
+  const q = {
+    location: {
+      $near: {
+        $geometry: {
+          type: 'Point',
+          coordinates
+        },
+        $maxDistance: 10000 // 10km
+      }
+    }
+  };
+
+  const stores = await Store.find(q).select('slug name description location').limit(10);
   res.json(stores);
 };
