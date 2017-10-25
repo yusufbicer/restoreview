@@ -31,10 +31,21 @@ const storeSchema = new mongoose.Schema({
     ],
     address: {
       type: String,
-      required: 'You must supply an address!'
+      required: 'You must supply an address!',
+      require: 'You must supply an author'
     }
   },
-  photo: String
+  photo: String,
+  author: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  }
+});
+
+// Define our indexes in order to search them
+storeSchema.index({
+  name: 'text',
+  description: 'text'
 });
 
 storeSchema.pre('save', async function(next) {
@@ -59,6 +70,6 @@ storeSchema.statics.getTagsList = function() {
     { $group: { _id: '$tags', count: { $sum: 1 } } },
     { $sort: { count: -1 } }
   ]);
-}
+};
 
 module.exports = mongoose.model('Store', storeSchema);
