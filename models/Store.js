@@ -78,6 +78,12 @@ storeSchema.statics.getTagsList = function() {
   ]);
 };
 
+storeSchema.virtual('reviews', {
+  ref: 'Review', // what model to link?
+  localField: '_id', // which field on the store?
+  foreignField: 'store' // which field on the review?
+})
+
 exports.mapStore = async (req, res) => {
   res.json({it: 'worked'})
 }
