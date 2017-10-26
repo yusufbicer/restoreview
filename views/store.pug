@@ -1,5 +1,6 @@
 extends layout
 include mixins/_reviewForm
+include mixins/_review
 block content
   h2 #{store.name}
   .single
@@ -19,3 +20,9 @@ block content
               span.tag__text= tag
   if user
     +reviewForm(store)
+    
+  if store.reviews
+    .reviews
+      each review in store.reviews
+        .review
+          +review(review)

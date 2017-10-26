@@ -40,6 +40,9 @@ const storeSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: 'User'
   }
+}, {
+  toJSON: { virtuals: true},
+  toObject: { virtuals: true},
 });
 
 // Define our indexes in order to search them
@@ -77,7 +80,7 @@ storeSchema.statics.getTagsList = function() {
     { $sort: { count: -1 } }
   ]);
 };
-
+// Find reviews where the stores _id property === reviews store property
 storeSchema.virtual('reviews', {
   ref: 'Review', // what model to link?
   localField: '_id', // which field on the store?
