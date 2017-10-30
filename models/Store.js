@@ -2,48 +2,51 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const slug = require('slugs');
 
-const storeSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    trim: true,
-    required: 'Please enter a store name!'
-  },
-  slug: String,
-  description: {
-    type: String,
-    trim: true
-  },
-  tags: [String],
-  created: {
-    type: Date,
-    default: Date.now
-  },
-  location: {
-    type: {
+const storeSchema = new mongoose.Schema(
+  {
+    name: {
       type: String,
-      default: 'Point'
+      trim: true,
+      required: 'Please enter a store name!'
     },
-    coordinates: [
-      {
-        type: Number,
-        required: 'You must supply coordinates!'
-      }
-    ],
-    address: {
+    slug: String,
+    description: {
       type: String,
-      required: 'You must supply an address!',
-      require: 'You must supply an author'
+      trim: true
+    },
+    tags: [String],
+    created: {
+      type: Date,
+      default: Date.now
+    },
+    location: {
+      type: {
+        type: String,
+        default: 'Point'
+      },
+      coordinates: [
+        {
+          type: Number,
+          required: 'You must supply coordinates!'
+        }
+      ],
+      address: {
+        type: String,
+        required: 'You must supply an address!',
+        require: 'You must supply an author'
+      }
+    },
+    photo: String,
+    author: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
     }
   },
-  photo: String,
-  author: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'User'
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
   }
-}, {
-  toJSON: { virtuals: true},
-  toObject: { virtuals: true},
-});
+);
 
 // Define our indexes in order to search them
 storeSchema.index({
@@ -55,7 +58,6 @@ storeSchema.index({
 storeSchema.index({
   location: '2dsphere'
 });
-
 
 storeSchema.pre('save', async function(next) {
   if (!this.isModified('name')) {
@@ -80,15 +82,53 @@ storeSchema.statics.getTagsList = function() {
     { $sort: { count: -1 } }
   ]);
 };
+
+storeSchema.statics.getTopStores = function() {
+  return this.aggregate([
+    // Lookup Stores and populate their reviews
+    {
+      $lookup: {
+        from: 'reviews',
+        localField: '_id',
+        foreignField: 'store',
+        as: 'reviews'
+      }
+    },
+    // filter for only items that have 2 or more reviews
+    { $match: { 'reviews.1': { $exists: true } } },
+    // add the average reviews field
+    {
+      $project: {
+        photo: '$$ROOT.photo',
+        name: '$$ROOT.name',
+        reviews: '$$ROOT.reviews',
+        slug: '$$ROOT.slug',
+        averageRating: { $avg: '$reviews.rating' }
+      }
+    },
+    // sort it by our new field, highest reviews first
+    { $sort: { averageRating: -1 } },
+    // limit to at most 10
+    { $limit: 10}
+  ]);
+};
 // Find reviews where the stores _id property === reviews store property
 storeSchema.virtual('reviews', {
   ref: 'Review', // what model to link?
   localField: '_id', // which field on the store?
   foreignField: 'store' // which field on the review?
-})
+});
+
+function autopopulate(next) {
+  this.populate('reviews');
+  next();
+}
+
+storeSchema.pre('find', autopopulate);
+storeSchema.pre('findOne', autopopulate);
 
 exports.mapStore = async (req, res) => {
-  res.json({it: 'worked'})
-}
+  res.json({ it: 'worked' });
+};
 
 module.exports = mongoose.model('Store', storeSchema);
