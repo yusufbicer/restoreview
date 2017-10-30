@@ -4,6 +4,7 @@ const User = mongoose.model('User');
 const multer = require('multer');
 const jimp = require('jimp');
 const uuid = require('uuid');
+
 const multerOptions = {
   storage: multer.memoryStorage(),
   fileFilter: function(req, file, next) {
@@ -51,9 +52,27 @@ exports.createStore = async (req, res) => {
 };
 
 exports.getStores = async (req, res) => {
+  const page = req.params.page || 1;
+  const limit = 4;
+  const skip = page * limit - limit;
+
   // 1. Query the databse for a list of all stores
-  const stores = await Store.find().populate('reviews');
-  res.render('stores', { title: 'Stores', stores });
+  const storesPromise = Store
+    .find()
+    .skip(skip)
+    .limit(limit)
+    .sort({created: 'desc'})
+
+  const countPromise = Store.count();
+
+  const [stores, count] = await Promise.all([storesPromise, countPromise]);
+
+  const pages = Math.ceil(count / limit);
+  if (!stores.length && skip) {
+    req.flash('info', `Hey! You asked for page ${page}. But that doesn't exist. So I put you on page ${pages}`);
+    return;
+  }
+  res.render('stores', { title: 'Stores', stores, page, pages, count });
 };
 
 const confirmOwner = (store, user) => {
@@ -155,22 +174,18 @@ exports.mapPage = async (req, res) => {
 exports.heartStore = async (req, res) => {
   const hearts = req.user.hearts.map(obj => obj.toString());
   const operator = hearts.includes(req.params.id) ? '$pull' : '$addToSet';
-  const user = await User
-    .findByIdAndUpdate(req.user._id,
-      { [operator]: { hearts: req.params.id}},
-      { new: true }
-    )
+  const user = await User.findByIdAndUpdate(req.user._id, { [operator]: { hearts: req.params.id } }, { new: true });
   res.json(user);
 };
 
 exports.getHearts = async (req, res) => {
   const stores = await Store.find({
-    _id: { $in: req.user.hearts}
-  })
-  res.render('stores', {title: 'Hearted Stores', stores})
+    _id: { $in: req.user.hearts }
+  });
+  res.render('stores', { title: 'Hearted Stores', stores });
 };
 
 exports.getTopStores = async (req, res) => {
   const stores = await Store.getTopStores();
-  res.render('topStores', {stores, title: 'Top Stores!'})
-}
+  res.render('topStores', { stores, title: 'Top Stores!' });
+};
